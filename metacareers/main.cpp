@@ -8,6 +8,17 @@
 #include <iostream>
 #include "platforms.h"
 
+void hanoi(int n, char x, char y, char z) {
+    if (n==1) {
+        std::cout << "Move 0 from " <<  x << " to " << y << '\n';
+        return;
+    }
+
+    hanoi(n-1, x, z, y);
+    std::cout << "Move " << n-1 << " from " << x << " to " << y << '\n';
+    hanoi(n-1, z, y, x);
+}
+
 
 int main(int argc, const char * argv[]) {
     // insert code here...
@@ -21,15 +32,15 @@ int main(int argc, const char * argv[]) {
         Platform(7, 11, 5), Platform(9, 11, 9),
         Platform(0, 4, 4)
     };*/
+    //hanoi(10, 'A', 'B', 'C');
     /*std::vector<Platform> v = {
-        Platform(100'000, 800'000, 10), Platform(400'000, 800'000, 20),
-        Platform(0, 200'000, 15)
+        Platform(100'000, 600'000, 10), Platform(400'000, 800'000, 20)
+//        Platform(0, 200'000, 15)
     };*/
-
-    auto probs = getPlatformStartProbabilities(v);
-    for (int i=0; i < v.size(); i++) {
-        std::cout << "Platform " << v[i].index << ": x1=" << v[i].x1 << ",x2=" << v[i].x2 << ",y=" << v[i].y << "; Left=" << v[i].left_index << ", Right=" << v[i].right_index << '\n';
-    }
+    /*std::vector<Platform> v = {
+        Platform(100'000, 900'000, 10), Platform(400'000, 800'000, 20),
+        Platform(0, 300'000, 5), Platform(800'000, 1'000'000, 2)
+    };*/
 
     std::cout << "Optimal length is " << findOptimalExpLen(v) << '\n';
 
