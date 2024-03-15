@@ -11,14 +11,16 @@
 class Platform {
 public:
     int x1, x2, y;
-    int open_x1, open_x2;
+    long double accumulated_left_open_exp_len_diff;
+    long double accumulated_left_open_exp_len;
+    int last_open;
     int index;
     int left_index;
     int right_index;
 
     Platform(int x1, int x2, int y) : x1(x1), x2(x2), y(y) {
-        open_x1 = x1;
-        open_x2 = x2;
+        accumulated_left_open_exp_len_diff = 0.0;
+        accumulated_left_open_exp_len = 0.0;
         left_index = -1;
         right_index = -1;
     }
@@ -45,7 +47,9 @@ public:
     
     EndPoint(int x, int p, bool isStart) : platform_index(p), x(x), isStart(isStart) {}
     bool operator<(const EndPoint& other) const {
-        return (x==other.x) ? (platform_index < other.platform_index) : x < other.x;
+        return (x==other.x) ? (
+                               (isStart != other.isStart) ? (!isStart) : (platform_index < other.platform_index)
+                               ) : x < other.x;
     }
 };
 
