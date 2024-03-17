@@ -11,7 +11,6 @@
 #include <string>
 #include <stack>
 #include <unordered_map>
-#include <set>
 #include <unordered_set>
 
 using DirMap = std::unordered_map<char, bool>;
@@ -28,34 +27,36 @@ constexpr char oppDirection(char d) {
     }
 }
 
-void updateIntersections(PointToDirMap& pointToDirMap,
-                         std::set<Segment, SegmentComparator> segments,
-                         const Point& start,
-                         const Point& end)
+void updateStacks(std::unordered_map<char,  std::stack<Segment>>& segmentsInDirection,
+                  const Point& start,
+                  const Point& end, char movementDir)
 {
-    std::cout << "Updating intersection for ";
-    start.print();
-    std::cout << " to ";
-    end.print();
-    std::cout << '\n';
-    auto movementDir = start.getDirection(end);
+    auto& dirSegments = segmentsInDirection[movementDir];
+    auto& oppDirSegments = segmentsInDirection[oppDirection(movementDir)];
+    while(!dirSegments.empty() && dirSegments.top().onTheWay(start, end))
+    {
+        oppDirSegments.push(dirSegments.top());
+        dirSegments.pop();
+    }
+}
 
-    Segment dummySegment(start, end);
-    Segment startDummy(start, start, !dummySegment.vertical);
-    Segment endDummy(end, end, !dummySegment.vertical);
-    auto startIt = segments.lower_bound(startDummy);
-    auto endIt = segments.upper_bound(endDummy);
-    for (auto tempIt = startIt; tempIt != endIt; tempIt++) {
-        auto intersection = tempIt->intersection(start, end);
-        tempIt->print();
-        std::cout << '\n';
+void updateIntersections(PointToDirMap& pointToDirMap,
+                         std::unordered_map<char, std::stack<Segment>>& segmentsInDirection,
+                         const Point& start,
+                         const Point& end, char movementDir)
+{
+    auto& dirSegments = segmentsInDirection[movementDir];
+    auto& oppDirSegments = segmentsInDirection[oppDirection(movementDir)];
+
+    while(!dirSegments.empty() && dirSegments.top().onTheWay(start, end)) {
+        auto intersection = dirSegments.top().intersection(start, end);
         if (intersection != std::nullopt) {
             auto pt = intersection.value();
             auto pointIt = pointToDirMap.find(pt);
             if (pointIt == pointToDirMap.end()) {
                 pointIt = pointToDirMap.insert({pt, {}}).first;
             }
-            auto segment = *tempIt;
+            auto segment = dirSegments.top();
             const auto [dir1, dir2] = segment.getDirections(pt);
             if (dir1 != 'E') pointIt->second[dir1] = true;
             if (dir2 != 'E') pointIt->second[dir2] = true;
@@ -63,18 +64,17 @@ void updateIntersections(PointToDirMap& pointToDirMap,
             if (pt != end) pointIt->second[movementDir] = true;
 
         }
+        oppDirSegments.push(dirSegments.top());
+        dirSegments.pop();
     }
 }
 
-
 long long getPlusSignCountImpl(int N, long long L[], char D[]) {
 
-    /*std::unordered_map<char, std::stack<Segment>> segmentsInDirection{
+    std::unordered_map<char, std::stack<Segment>> segmentsInDirection{
         {'L', std::stack<Segment>()}, {'R', std::stack<Segment>()},
         {'D', std::stack<Segment>()}, {'U', std::stack<Segment>()}
-    };*/
-    std::set<Segment, SegmentComparator> horizSegments;
-    std::set<Segment, SegmentComparator> vertSegments;
+    };
 
     Point cur(0, 0);
     Point minlevelBegin = cur;
@@ -88,33 +88,26 @@ long long getPlusSignCountImpl(int N, long long L[], char D[]) {
 
         if (minlevelBegin != maxLevelEnd && levelSegment.isPerp(D[i]))
         {
-            if (levelSegment.vertical) vertSegments.insert(levelSegment);
-            else horizSegments.insert(levelSegment);
 
-            updateIntersections(pointToDirMap,
-                                levelSegment.vertical ? horizSegments : vertSegments,
-                                minlevelBegin, maxLevelEnd);
+            segmentsInDirection[D[i]].push(levelSegment);
             minlevelBegin = maxLevelEnd = cur;
         }
-
+        updateIntersections(pointToDirMap, segmentsInDirection,
+                            cur, nextPoint, D[i]);
         if (maxLevelEnd < nextPoint) maxLevelEnd = nextPoint;
         if (nextPoint < minlevelBegin) minlevelBegin = nextPoint;
 
         cur = nextPoint;
     }
-    updateIntersections(pointToDirMap,
-                        Segment(minlevelBegin, maxLevelEnd).vertical ? horizSegments : vertSegments,
-                        minlevelBegin, maxLevelEnd);
 
     long long pointSum = 0;
     for (const auto& pointAndDirs: pointToDirMap) {
         auto dirs = pointAndDirs.second;
-        pointAndDirs.first.print();
-        std::cout << ":\n";
+        /*std::cout << pointAndDirs.first.x << ' ' << pointAndDirs.first.y << ":\n";
 
         for (const auto& dirMap: pointAndDirs.second)
             std::cout << dirMap.first << ' ' << dirMap.second << ';';
-        std::cout << std::endl;
+        std::cout << std::endl;*/
         if (dirs['L'] && dirs['D'] && dirs['R'] && dirs['U'])
             pointSum++;
     }
@@ -143,8 +136,10 @@ long long getPlusSignCount(int N, std::vector<int>& L, std::string_view D) {
 
 int main(int argc, const char * argv[]) {
     // insert code here...
-    std::vector L = {5, 1, 2, 3, 7, 1, 1, 9, 1};
-    std::string D = "LDUDDRLUL";
+    /*std::vector L = {5, 1, 2, 3, 7, 1, 1, 9, 1};
+    std::string D = "LDUDDRLUL";*/
+    std::vector L = {5, 1};
+    std::string D = "LD";
     std::cout << getPlusSignCount(static_cast<int>(L.size()), L, D) << std::endl;
     return 0;
 }
